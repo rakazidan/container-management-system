@@ -1,0 +1,15 @@
+.yard-canvas-container {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.yard-canvas-container canvas {
+  cursor: grab;
+}
+
+.yard-canvas-container canvas:active {
+  cursor: grabbing;
+}

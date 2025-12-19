@@ -1,0 +1,130 @@
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 40px;
+  background: white;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  min-height: auto;
+}
+
+.navbar-left {
+  display: flex;
+  align-items: center;
+  gap: 55px;
+}
+
+.company-logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.company-logo:hover {
+  transform: scale(1.05);
+}
+
+.logo-image {
+  width: 120px;
+  height: 120px;
+  object-fit: contain;
+  margin: -30px 0;
+}
+
+.company-name {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: white;
+  letter-spacing: 0.5px;
+}
+
+.navbar-center {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+  margin-left: 0;
+}
+
+.nav-menu-item {
+  padding: 6px 18px;
+  background: rgba(26, 77, 46, 0.1);
+  border: 1px solid rgba(26, 77, 46, 0.2);
+  border-radius: 20px;
+  color: #1a4d2e;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.nav-menu-item:hover {
+  background: rgba(26, 77, 46, 0.15);
+  border-color: rgba(26, 77, 46, 0.4);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.nav-menu-item.active {
+  background: #1a4d2e;
+  color: white;
+  border-color: #1a4d2e;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.navbar-right {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.nav-icon-btn {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(26, 77, 46, 0.1);
+  border: 1px solid rgba(26, 77, 46, 0.2);
+  border-radius: 8px;
+  color: #1a4d2e;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.nav-icon-btn:hover {
+  background: rgba(26, 77, 46, 0.15);
+  border-color: rgba(26, 77, 46, 0.4);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.notification-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: #ff4757;
+  color: white;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 10px;
+  min-width: 18px;
+  text-align: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.profile-btn {
+  border-radius: 50%;
+}
+
+.profile-btn:hover {
+  background: rgba(26, 77, 46, 0.2);
+}

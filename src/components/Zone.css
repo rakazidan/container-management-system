@@ -1,0 +1,32 @@
+.zone-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.zone-wrapper:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+.zone-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  width: 100%;
+}
+
+.zone-label {
+  text-align: center;
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: #1a4d2e;
+  padding: 10px;
+  border-radius: 8px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
