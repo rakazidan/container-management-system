@@ -194,9 +194,6 @@ const YardCanvas: React.FC<YardCanvasProps> = ({
           {/* Grid */}
           {renderGrid()}
           
-          {/* Zone overlays */}
-          {renderZoneLabels()}
-          
           {/* Container markers */}
           {groupedContainers.map(group => (
             <ContainerMarker

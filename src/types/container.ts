@@ -23,21 +23,38 @@ export interface GPSCoordinate {
   longitude: number;
 }
 
+// Zone dengan 4 titik GPS (sesuai TB_M_ZONE)
+export interface ZoneGPS {
+  zoneId: string;
+  zoneName: string;
+  areaId: string;
+  // 4 corner points membentuk rectangle
+  latlongUpleft: GPSCoordinate;     // Top-left
+  latlongDownleft: GPSCoordinate;   // Bottom-left
+  latlongUpright: GPSCoordinate;    // Top-right
+  latlongDownright: GPSCoordinate;  // Bottom-right
+}
+
 export interface ContainerPosition {
   id: string;
   containerNumber: string;
   shippingAgent: string;
   yardInDate: string;
-  gpsCoordinate: GPSCoordinate;
+  stackLevel: number; // 1-4 (sesuai TB_M_CONTAINER.stack_level)
+  agentId: string;
+  zoneId: string; // Foreign key ke ZoneGPS
+  zoneName?: string; // Untuk display
+  gpsCoordinate: GPSCoordinate; // 1 titik GPS saja
   // Canvas coordinates (transformed from GPS)
   canvasX: number;
   canvasY: number;
-  stackCount: number;
   rotation: number; // 0 or 90 degrees for container orientation
 }
 
 export interface GroupedContainer {
   id: string;
+  zoneId: string;
+  zoneName: string;
   containers: ContainerPosition[];
   canvasX: number;
   canvasY: number;

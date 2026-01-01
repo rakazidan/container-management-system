@@ -1,4 +1,4 @@
-import type { ContainerPosition, YardBoundary, GPSCoordinate } from '../types/container';
+import type { ContainerPosition, YardBoundary, GPSCoordinate, ZoneGPS } from '../types/container';
 import { CoordinateTransformer } from './coordinateTransform';
 
 // Reuse existing generators from zoneData.ts
@@ -42,6 +42,85 @@ const generateYardInDate = (): string => {
   const seconds = String(date.getSeconds()).padStart(2, '0');
   
   return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+};
+
+/**
+ * Generate zones dengan 4 titik GPS membentuk rectangle
+ * Sesuai struktur TB_M_ZONE (latlong_upleft, latlong_downleft, latlong_upright, latlong_downright)
+ */
+export const generateMockZones = (yardBounds: YardBoundary, zoneCount: number = 5): ZoneGPS[] => {
+  const zones: ZoneGPS[] = [];
+  const zoneNames = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I'];
+  
+  const { topLeft, bottomRight } = yardBounds;
+  const totalWidth = bottomRight.longitude - topLeft.longitude;
+  const totalHeight = bottomRight.latitude - topLeft.latitude;
+  
+  // Calculate grid layout (e.g., 2x3 for 5-6 zones)
+  const cols = Math.ceil(Math.sqrt(zoneCount));
+  const rows = Math.ceil(zoneCount / cols);
+  
+  const zoneWidth = totalWidth / cols;
+  const zoneHeight = totalHeight / rows;
+  
+  for (let i = 0; i < zoneCount && i < zoneNames.length; i++) {
+    const row = Math.floor(i / cols);
+    const col = i % cols;
+    
+    // Calculate 4 corner points
+    const left = topLeft.longitude + (col * zoneWidth);
+    const right = left + zoneWidth;
+    const top = topLeft.latitude + (row * zoneHeight);
+    const bottom = top + zoneHeight;
+    
+    zones.push({
+      zoneId: `zone-${zoneNames[i]}`,
+      zoneName: zoneNames[i],
+      areaId: 'area-01', // Default area
+      latlongUpleft: { latitude: top, longitude: left },
+      latlongDownleft: { latitude: bottom, longitude: left },
+      latlongUpright: { latitude: top, longitude: right },
+      latlongDownright: { latitude: bottom, longitude: right }
+    });
+  }
+  
+  return zones;
+};
+
+/**
+ * Check if GPS point is inside zone rectangle
+ * Zone dibentuk oleh 4 corner points
+ */
+export const isPointInZone = (point: GPSCoordinate, zone: ZoneGPS): boolean => {
+  const minLat = Math.min(
+    zone.latlongUpleft.latitude,
+    zone.latlongDownleft.latitude,
+    zone.latlongUpright.latitude,
+    zone.latlongDownright.latitude
+  );
+  const maxLat = Math.max(
+    zone.latlongUpleft.latitude,
+    zone.latlongDownleft.latitude,
+    zone.latlongUpright.latitude,
+    zone.latlongDownright.latitude
+  );
+  const minLon = Math.min(
+    zone.latlongUpleft.longitude,
+    zone.latlongDownleft.longitude,
+    zone.latlongUpright.longitude,
+    zone.latlongDownright.longitude
+  );
+  const maxLon = Math.max(
+    zone.latlongUpleft.longitude,
+    zone.latlongDownleft.longitude,
+    zone.latlongUpright.longitude,
+    zone.latlongDownright.longitude
+  );
+  
+  return point.latitude >= minLat && 
+         point.latitude <= maxLat && 
+         point.longitude >= minLon && 
+         point.longitude <= maxLon;
 };
 
 /**
@@ -92,92 +171,129 @@ export const isInsideYard = (point: GPSCoordinate, yardBounds: YardBoundary): bo
 };
 
 /**
- * Generate mock containers with GPS coordinates
+ * Generate mock containers dengan GPS coordinates dan assign ke zones
+ * 1 ZONE = 1 STACK POSITION
+ * Zone digunakan untuk logic stacking: semua container dalam 1 zone = 1 vertical stack
  * @param yardBounds - Yard boundary with GPS coordinates
- * @param count - Number of containers to generate
- * @returns Array of ContainerPosition with GPS and canvas coordinates
+ * @param zones - Array of zones (1 zone = 1 stack position)
+ * @returns Array of ContainerPosition dengan zone assignment dan stack levels
  */
 export const generateMockContainersWithGPS = (
   yardBounds: YardBoundary,
-  count: number = 50
+  zones: ZoneGPS[]
 ): ContainerPosition[] => {
   const transformer = new CoordinateTransformer(yardBounds);
   const containers: ContainerPosition[] = [];
-  let attempts = 0;
-  const maxAttempts = count * 10; // Prevent infinite loop
+  const shippingAgents = [
+    { id: 'AG001', name: 'Maersk Line' },
+    { id: 'AG002', name: 'MSC' },
+    { id: 'AG003', name: 'CMA CGM' },
+    { id: 'AG004', name: 'COSCO' },
+    { id: 'AG005', name: 'Hapag-Lloyd' },
+    { id: 'AG006', name: 'ONE' },
+    { id: 'AG007', name: 'Evergreen' },
+    { id: 'AG008', name: 'Yang Ming' }
+  ];
   
-  // Generate containers only inside the polygon
-  while (containers.length < count && attempts < maxAttempts) {
-    attempts++;
-    const gps = generateRandomGPS(yardBounds);
+  // Loop through each zone - setiap zone = 1 stack
+  zones.forEach(zone => {
+    // Calculate center point of zone (average of 4 corners)
+    const centerLat = (
+      zone.latlongUpleft.latitude +
+      zone.latlongDownleft.latitude +
+      zone.latlongUpright.latitude +
+      zone.latlongDownright.latitude
+    ) / 4;
     
-    // Check if point is inside yard polygon
-    if (isInsideYard(gps, yardBounds)) {
-      const canvas = transformer.gpsToCanvas(gps);
+    const centerLon = (
+      zone.latlongUpleft.longitude +
+      zone.latlongDownleft.longitude +
+      zone.latlongUpright.longitude +
+      zone.latlongDownright.longitude
+    ) / 4;
+    
+    const zoneGPS: GPSCoordinate = {
+      latitude: centerLat,
+      longitude: centerLon
+    };
+    
+    const canvas = transformer.gpsToCanvas(zoneGPS);
+    const rotation = Math.random() > 0.5 ? 0 : 90;
+    
+    // Tentukan berapa container di zone/stack ini (0-4)
+    // 20% chance empty, otherwise 1-4 containers
+    const containersInStack = Math.random() < 0.2 ? 0 : Math.floor(Math.random() * 4) + 1;
+    
+    // Generate containers untuk zone/stack ini
+    for (let level = 1; level <= containersInStack; level++) {
+      const agent = shippingAgents[Math.floor(Math.random() * shippingAgents.length)];
       
       containers.push({
-        id: `container-${containers.length + 1}`,
+        id: `container-${zone.zoneId}-L${level}`,
         containerNumber: generateContainerNumber(),
-        shippingAgent: generateShippingAgent(),
+        shippingAgent: agent.name,
+        agentId: agent.id,
         yardInDate: generateYardInDate(),
-        gpsCoordinate: gps,
+        stackLevel: level, // Stack level: 1 (bottom), 2, 3, 4 (top)
+        zoneId: zone.zoneId,
+        zoneName: zone.zoneName,
+        gpsCoordinate: zoneGPS, // Semua container dalam 1 zone punya GPS sama (center of zone)
         canvasX: canvas.x,
         canvasY: canvas.y,
-        stackCount: 1,
-        rotation: Math.random() > 0.5 ? 0 : 90
+        rotation
       });
     }
-  }
+  });
   
   return containers;
 };
 
 /**
- * Group nearby containers into stacks
- * Containers within proximityThreshold distance are considered part of the same stack
+ * Group containers by zone
+ * 1 ZONE = 1 STACK
+ * Containers diurutkan berdasarkan stack level (1 = bottom, 4 = top)
  */
-export const groupNearbyContainers = (
-  containers: ContainerPosition[],
-  proximityThreshold: number = 35
+export const groupContainersByZone = (
+  containers: ContainerPosition[]
 ): any[] => {
   const grouped: any[] = [];
-  const processed = new Set<string>();
+  const zoneMap = new Map<string, ContainerPosition[]>();
   
+  // Group by zoneId
   containers.forEach(container => {
-    if (processed.has(container.id)) return;
+    if (!zoneMap.has(container.zoneId)) {
+      zoneMap.set(container.zoneId, []);
+    }
+    zoneMap.get(container.zoneId)!.push(container);
+  });
+  
+  // Convert to array and sort by stack level
+  zoneMap.forEach((containersInZone, zoneId) => {
+    if (containersInZone.length === 0) return;
     
-    // Find nearby containers
-    const nearby = containers.filter(other => {
-      if (other.id === container.id || processed.has(other.id)) return false;
-      
-      const distance = Math.sqrt(
-        Math.pow(container.canvasX - other.canvasX, 2) +
-        Math.pow(container.canvasY - other.canvasY, 2)
-      );
-      
-      return distance < proximityThreshold;
-    });
+    // Sort by stack level (1 = bottom, 4 = top)
+    containersInZone.sort((a, b) => a.stackLevel - b.stackLevel);
     
-    // Create group
-    const allInGroup = [container, ...nearby];
-    allInGroup.forEach(c => processed.add(c.id));
-    
-    // Calculate average position for the group
-    const avgX = allInGroup.reduce((sum, c) => sum + c.canvasX, 0) / allInGroup.length;
-    const avgY = allInGroup.reduce((sum, c) => sum + c.canvasY, 0) / allInGroup.length;
+    const firstContainer = containersInZone[0];
     
     grouped.push({
-      id: `group-${container.id}`,
-      containers: allInGroup,
-      canvasX: avgX,
-      canvasY: avgY,
-      totalStacks: allInGroup.length,
-      rotation: container.rotation
+      id: `stack-${zoneId}`,
+      zoneId: zoneId,
+      zoneName: firstContainer.zoneName || '',
+      containers: containersInZone,
+      canvasX: firstContainer.canvasX,
+      canvasY: firstContainer.canvasY,
+      totalStacks: containersInZone.length,
+      rotation: firstContainer.rotation,
+      gpsCoordinate: firstContainer.gpsCoordinate
     });
   });
   
   return grouped;
 };
+
+// Export dengan nama lama untuk backward compatibility
+export const groupNearbyContainers = groupContainersByZone;
 
 /**
  * Default yard boundaries with iPhone-style notch at top
@@ -193,7 +309,7 @@ export const DEFAULT_YARD_BOUNDS: YardBoundary = {
     latitude: -6.2100, 
     longitude: 106.8100 
   },
-  // Polygon with notch at top center (iPhone style)
+  // Polygon with notch at top center
   polygonPoints: [
     // Start from top-left corner
     { latitude: -6.2000, longitude: 106.8000 },

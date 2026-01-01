@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import YardCanvas from '../components/canvas/YardCanvas';
 import ControlPanel from '../components/canvas/ControlPanel';
-import type { ContainerPosition, GroupedContainer } from '../types/container';
-import { generateMockContainersWithGPS, DEFAULT_YARD_BOUNDS, groupNearbyContainers } from '../utils/mockGPSData';
+import type { ContainerPosition, GroupedContainer, ZoneGPS } from '../types/container';
+import { generateMockContainersWithGPS, generateMockZones, DEFAULT_YARD_BOUNDS, groupNearbyContainers } from '../utils/mockGPSData';
 import './MonitoringCanvas.css';
 import '../components/Container.css'; // Reuse modal styles
 
 const MonitoringCanvas: React.FC = () => {
+  const [zones, setZones] = useState<ZoneGPS[]>([]);
   const [containers, setContainers] = useState<ContainerPosition[]>([]);
   const [groupedContainers, setGroupedContainers] = useState<GroupedContainer[]>([]);
   const [scale, setScale] = useState(1);
@@ -17,14 +18,20 @@ const MonitoringCanvas: React.FC = () => {
   const [selectedGroup, setSelectedGroup] = useState<GroupedContainer | null>(null);
   const [showModal, setShowModal] = useState(false);
   
-  // Generate mock data on mount
+  // Generate mock data on mount - sesuai database structure
   useEffect(() => {
-    // Reduced to 40 containers for better performance
-    const mockContainers = generateMockContainersWithGPS(DEFAULT_YARD_BOUNDS, 40);
+    // 1. Generate zones dulu (TB_M_ZONE)
+    // Setiap zone = 1 stack position
+    const mockZones = generateMockZones(DEFAULT_YARD_BOUNDS, 20);
+    setZones(mockZones);
+    
+    // 2. Generate containers untuk setiap zone (TB_M_CONTAINER)
+    // 1 zone = 1 stack, bisa berisi 0-4 containers dengan stack level 1-4
+    const mockContainers = generateMockContainersWithGPS(DEFAULT_YARD_BOUNDS, mockZones);
     setContainers(mockContainers);
     
-    // Group nearby containers
-    const grouped = groupNearbyContainers(mockContainers, 40); // Slightly larger proximity
+    // 3. Group containers by zone (1 zone = 1 stack)
+    const grouped = groupNearbyContainers(mockContainers);
     setGroupedContainers(grouped);
   }, []);
   
@@ -165,7 +172,8 @@ const MonitoringCanvas: React.FC = () => {
       {/* Selected Container Info */}
       {selectedGroup && !showModal && (
         <div className="selected-info-card">
-          <h4>Selected Stack</h4>
+          <h4>Selected Stack - Zone {selectedGroup.zoneName}</h4>
+          <p><strong>Zone ID:</strong> {selectedGroup.zoneId}</p>
           <p><strong>Total Containers:</strong> {selectedGroup.totalStacks}</p>
           <p><strong>GPS:</strong> {selectedGroup.containers[0].gpsCoordinate.latitude.toFixed(6)}, {selectedGroup.containers[0].gpsCoordinate.longitude.toFixed(6)}</p>
           <button onClick={() => setShowModal(true)} className="view-details-btn">View Details</button>
@@ -177,11 +185,15 @@ const MonitoringCanvas: React.FC = () => {
         <div className="modal-overlay" onClick={() => setShowModal(false)}>
           <div className="modal-content-compact" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h2>Container Stack Details</h2>
+              <h2>Container Stack Details - Zone {selectedGroup.zoneName}</h2>
               <button className="close-btn" onClick={() => setShowModal(false)}>&times;</button>
             </div>
             <div className="modal-body">
               <div className="modal-info-row">
+                <div className="modal-info-item">
+                  <span className="modal-info-label">Zone</span>
+                  <span className="modal-info-value">{selectedGroup.zoneName} ({selectedGroup.zoneId})</span>
+                </div>
                 <div className="modal-info-item">
                   <span className="modal-info-label">GPS Location</span>
                   <span className="modal-info-value">
@@ -197,16 +209,16 @@ const MonitoringCanvas: React.FC = () => {
                 <table className="container-table-compact">
                   <thead>
                     <tr>
-                      <th>Stack</th>
+                      <th>Stack Level</th>
                       <th>Shipping Agent</th>
                       <th>Container Number</th>
                       <th>Yard In Date</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {selectedGroup.containers.map((container, index) => (
+                    {selectedGroup.containers.map((container) => (
                       <tr key={container.id}>
-                        <td>{index + 1}</td>
+                        <td>{container.stackLevel}</td>
                         <td>{container.shippingAgent}</td>
                         <td className="container-number">{container.containerNumber}</td>
                         <td>{container.yardInDate}</td>
