@@ -5,11 +5,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      platforms:
-        - linux/amd64  # For t2/t3 instances (x86)
-        - linux/arm64  # For t4g instances (ARM Graviton2)
     container_name: container-management-frontend
-    platform: linux/arm64  # Auto-detect or specify based on your EC2 type
     ports:
       - "80:80"
     restart: unless-stopped
