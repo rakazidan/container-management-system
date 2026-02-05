@@ -13,17 +13,17 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Detect docker-compose command (v1 vs v2)
-if command -v docker-compose &> /dev/null; then
-    DOCKER_COMPOSE="docker-compose"
-elif docker compose version &> /dev/null; then
+if docker compose version &> /dev/null 2>&1; then
     DOCKER_COMPOSE="docker compose"
+elif command -v docker-compose &> /dev/null 2>&1; then
+    DOCKER_COMPOSE="docker-compose"
 else
     echo "❌ Error: Docker Compose not found!"
     echo "Please install Docker Compose first."
     exit 1
 fi
 
-echo "Using: $DOCKER_COMPOSE"
+echo "ℹ️  Using: $DOCKER_COMPOSE"
 
 # Stop and remove existing containers
 echo -e "${BLUE}Stopping existing containers...${NC}"
