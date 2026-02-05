@@ -7,7 +7,9 @@ import './MonitoringCanvas.css';
 import '../components/Container.css'; // Reuse modal styles
 
 const MonitoringCanvas: React.FC = () => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [zones, setZones] = useState<ZoneGPS[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [containers, setContainers] = useState<ContainerPosition[]>([]);
   const [groupedContainers, setGroupedContainers] = useState<GroupedContainer[]>([]);
   const [scale, setScale] = useState(1);
@@ -166,6 +168,7 @@ const MonitoringCanvas: React.FC = () => {
           onZoomIn={handleZoomIn}
           onZoomOut={handleZoomOut}
           onReset={handleResetView}
+          containerCount={groupedContainers.length}
         />
       </div>
 

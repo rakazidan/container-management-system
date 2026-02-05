@@ -56,7 +56,7 @@ const generateContainerInfos = (stackCount: number): ContainerInfo[] => {
 export const generateZoneData = (): Zone[] => {
   const zoneNames = ['A', 'B', 'C', 'D', 'E'];
   
-  return zoneNames.map((name, zoneIndex) => ({
+  return zoneNames.map((name) => ({
     id: `zone-${name}`,
     name: name,
     containers: Array.from({ length: 9 }, (_, i) => {

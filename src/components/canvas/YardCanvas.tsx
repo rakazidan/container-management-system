@@ -107,7 +107,7 @@ const YardCanvas: React.FC<YardCanvasProps> = ({
   
   // Render grid lines for better spatial reference
   const renderGrid = () => {
-    const lines: JSX.Element[] = [];
+    const lines: React.JSX.Element[] = [];
     const { canvasWidth, canvasHeight } = yardBounds;
     const gridSize = 100; // Grid every 100 pixels
     
@@ -141,6 +141,7 @@ const YardCanvas: React.FC<YardCanvasProps> = ({
   };
   
   // Render zone labels with notch awareness
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const renderZoneLabels = () => {
     const zones = ['A', 'B', 'C', 'D', 'E'];
     const zoneWidth = yardBounds.canvasWidth / 5;

@@ -10,6 +10,7 @@ const generateContainerNumber = (): string => {
   return `${randomPrefix}${randomNumber}${checkDigit}`;
 };
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const generateShippingAgent = (): string => {
   const agents = [
     'Maersk Line',
@@ -126,6 +127,7 @@ export const isPointInZone = (point: GPSCoordinate, zone: ZoneGPS): boolean => {
 /**
  * Generate random GPS coordinate within yard boundaries
  */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const generateRandomGPS = (yardBounds: YardBoundary): GPSCoordinate => {
   const { topLeft, bottomRight } = yardBounds;
   
