@@ -10,21 +10,6 @@ const generateContainerNumber = (): string => {
   return `${randomPrefix}${randomNumber}${checkDigit}`;
 };
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const generateShippingAgent = (): string => {
-  const agents = [
-    'Maersk Line',
-    'MSC',
-    'CMA CGM',
-    'COSCO',
-    'Hapag-Lloyd',
-    'ONE',
-    'Evergreen',
-    'Yang Ming'
-  ];
-  return agents[Math.floor(Math.random() * agents.length)];
-};
-
 const generateYardInDate = (): string => {
   const today = new Date();
   const daysAgo = Math.floor(Math.random() * 30);
@@ -122,22 +107,6 @@ export const isPointInZone = (point: GPSCoordinate, zone: ZoneGPS): boolean => {
          point.latitude <= maxLat && 
          point.longitude >= minLon && 
          point.longitude <= maxLon;
-};
-
-/**
- * Generate random GPS coordinate within yard boundaries
- */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const generateRandomGPS = (yardBounds: YardBoundary): GPSCoordinate => {
-  const { topLeft, bottomRight } = yardBounds;
-  
-  const latRange = bottomRight.latitude - topLeft.latitude;
-  const lonRange = bottomRight.longitude - topLeft.longitude;
-  
-  return {
-    latitude: topLeft.latitude + Math.random() * latRange,
-    longitude: topLeft.longitude + Math.random() * lonRange
-  };
 };
 
 /**

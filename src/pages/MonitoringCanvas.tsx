@@ -8,9 +8,9 @@ import '../components/Container.css'; // Reuse modal styles
 
 const MonitoringCanvas: React.FC = () => {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [zones, setZones] = useState<ZoneGPS[]>([]);
+  const [_zones, setZones] = useState<ZoneGPS[]>([]);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [containers, setContainers] = useState<ContainerPosition[]>([]);
+  const [_containers, setContainers] = useState<ContainerPosition[]>([]);
   const [groupedContainers, setGroupedContainers] = useState<GroupedContainer[]>([]);
   const [scale, setScale] = useState(1);
   const [searchCode, setSearchCode] = useState('');

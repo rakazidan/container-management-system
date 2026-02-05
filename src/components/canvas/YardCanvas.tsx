@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Stage, Layer, Rect, Text, Line, Group } from 'react-konva';
+import { Stage, Layer, Rect, Line } from 'react-konva';
 import type Konva from 'konva';
 import type { GroupedContainer, YardBoundary } from '../../types/container';
 import { CoordinateTransformer } from '../../utils/coordinateTransform';
@@ -138,39 +138,6 @@ const YardCanvas: React.FC<YardCanvasProps> = ({
     }
     
     return lines;
-  };
-  
-  // Render zone labels with notch awareness
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const renderZoneLabels = () => {
-    const zones = ['A', 'B', 'C', 'D', 'E'];
-    const zoneWidth = yardBounds.canvasWidth / 5;
-    
-    return zones.map((zone, i) => (
-      <Group key={zone}>
-        <Line
-          points={[
-            i * zoneWidth, 0,
-            i * zoneWidth, yardBounds.canvasHeight
-          ]}
-          stroke="#1a4d2e"
-          strokeWidth={2}
-          dash={[10, 5]}
-          listening={false}
-        />
-        <Text
-          text={`Zone ${zone}`}
-          x={i * zoneWidth + 20}
-          y={100} // Position below notch area
-          fontSize={24}
-          fill="#1a4d2e"
-          fontStyle="bold"
-          shadowBlur={3}
-          shadowColor="white"
-          listening={false}
-        />
-      </Group>
-    ));
   };
   
   return (
