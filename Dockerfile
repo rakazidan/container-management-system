@@ -1,6 +1,6 @@
 # Build stage
-# Support both ARM64 (t4g) and AMD64 (t2) architectures
-FROM --platform=$BUILDPLATFORM node:20-alpine AS builder
+# Auto-detects ARM64 (t4g) or AMD64 (t2) based on host architecture
+FROM node:20-alpine AS builder
 
 WORKDIR /app
 
@@ -17,8 +17,8 @@ COPY . .
 RUN npm run build
 
 # Production stage
-# Support both ARM64 (t4g) and AMD64 (t2) architectures
-FROM --platform=$TARGETPLATFORM nginx:alpine
+# Auto-detects ARM64 (t4g) or AMD64 (t2) based on host architecture
+FROM nginx:alpine
 
 # Copy built files from builder
 COPY --from=builder /app/dist /usr/share/nginx/html
