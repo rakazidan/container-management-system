@@ -1,16 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import YardCanvas from '../components/canvas/YardCanvas';
 import ControlPanel from '../components/canvas/ControlPanel';
-import type { ContainerPosition, GroupedContainer, ZoneGPS } from '../types/container';
-import { generateMockContainersWithGPS, generateMockZones, DEFAULT_YARD_BOUNDS, groupNearbyContainers } from '../utils/mockGPSData';
+import type { GroupedContainer } from '../types/container';
+import { DEFAULT_YARD_BOUNDS } from '../utils/mockGPSData';
+import { CoordinateTransformer } from '../utils/coordinateTransform';
+import { getZones, getContainersGrouped, searchContainer } from '../services/api';
 import './MonitoringCanvas.css';
-import '../components/Container.css'; // Reuse modal styles
+import '../components/Container.css';
 
 const MonitoringCanvas: React.FC = () => {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [_zones, setZones] = useState<ZoneGPS[]>([]);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [_containers, setContainers] = useState<ContainerPosition[]>([]);
   const [groupedContainers, setGroupedContainers] = useState<GroupedContainer[]>([]);
   const [scale, setScale] = useState(1);
   const [searchCode, setSearchCode] = useState('');
@@ -19,57 +17,97 @@ const MonitoringCanvas: React.FC = () => {
   const [searchMessage, setSearchMessage] = useState('');
   const [selectedGroup, setSelectedGroup] = useState<GroupedContainer | null>(null);
   const [showModal, setShowModal] = useState(false);
-  
-  // Generate mock data on mount - sesuai database structure
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
   useEffect(() => {
-    // 1. Generate zones dulu (TB_M_ZONE)
-    // Setiap zone = 1 stack position
-    const mockZones = generateMockZones(DEFAULT_YARD_BOUNDS, 20);
-    setZones(mockZones);
-    
-    // 2. Generate containers untuk setiap zone (TB_M_CONTAINER)
-    // 1 zone = 1 stack, bisa berisi 0-4 containers dengan stack level 1-4
-    const mockContainers = generateMockContainersWithGPS(DEFAULT_YARD_BOUNDS, mockZones);
-    setContainers(mockContainers);
-    
-    // 3. Group containers by zone (1 zone = 1 stack)
-    const grouped = groupNearbyContainers(mockContainers);
-    setGroupedContainers(grouped);
+    const fetchData = async () => {
+      try {
+        const [, groupedRes] = await Promise.all([
+          getZones() as Promise<any>,
+          getContainersGrouped() as Promise<any>,
+        ]);
+
+        const transformer = new CoordinateTransformer(DEFAULT_YARD_BOUNDS);
+
+        // Map API response → GroupedContainer type yang dipakai canvas
+        const groups: GroupedContainer[] = (groupedRes.data || []).map((g: any) => {
+          const gpsCoord = g.gps_coordinate;
+          const canvas = transformer.gpsToCanvas(gpsCoord);
+
+          return {
+            id: g.id,
+            zoneId: g.zone_id,
+            zoneName: g.zone_name,
+            containers: g.containers.map((c: any) => ({
+              id: c.id,
+              containerNumber: c.container_number,
+              shippingAgent: c.shipping_agent,
+              agentId: c.agent_id,
+              stackLevel: c.stack_level,
+              yardInDate: c.yard_in_date,
+              zoneId: c.zone_id,
+              zoneName: c.zone_name,
+              gpsCoordinate: gpsCoord,
+              canvasX: canvas.x,
+              canvasY: canvas.y,
+              rotation: g.rotation || 0,
+            })),
+            canvasX: canvas.x,
+            canvasY: canvas.y,
+            totalStacks: g.total_stacks,
+            rotation: g.rotation || 0,
+          };
+        });
+
+        setGroupedContainers(groups);
+      } catch (e) {
+        setError('Failed to load monitoring data. Make sure the backend is running.');
+        console.error(e);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
   }, []);
-  
-  // Handle search
-  const handleSearch = (e: React.FormEvent) => {
+
+  const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     setHighlightedGroupId(null);
     setSearchMessage('');
     setShowModal(false);
-    
+
     if (!searchCode.trim() && !searchAgent.trim()) {
       setSearchMessage('Please enter container number or shipping agent');
       return;
     }
-    
-    // Search through grouped containers
-    const foundGroup = groupedContainers.find(group => {
-      return group.containers.some(container => {
-        const matchCode = !searchCode.trim() || 
-          container.containerNumber.toLowerCase() === searchCode.trim().toLowerCase();
-        const matchAgent = !searchAgent.trim() || 
-          container.shippingAgent.toLowerCase().includes(searchAgent.trim().toLowerCase());
-        return matchCode && matchAgent;
-      });
-    });
-    
-    if (foundGroup) {
-      setHighlightedGroupId(foundGroup.id);
-      setSelectedGroup(foundGroup);
-      setSearchMessage(`Found! Stack contains ${foundGroup.totalStacks} container(s)`);
-    } else {
-      setSearchMessage('Container not found');
+
+    try {
+      const res = await searchContainer({
+        container_number: searchCode.trim() || undefined,
+        shipping_agent: searchAgent.trim() || undefined,
+      }) as any;
+
+      const zoneId = res.data?.zone_id;
+      const groupId = `stack-${zoneId}`;
+      const foundGroup = groupedContainers.find(g => g.id === groupId);
+
+      if (foundGroup) {
+        setHighlightedGroupId(groupId);
+        setSelectedGroup(foundGroup);
+        setSearchMessage(`Found! Stack contains ${foundGroup.totalStacks} container(s)`);
+      } else {
+        setSearchMessage('Container found but zone not in view');
+      }
+    } catch (err: any) {
+      if (err.message?.includes('404') || err.message?.includes('not found')) {
+        setSearchMessage('Container not found');
+      } else {
+        setSearchMessage('Search error: ' + err.message);
+      }
     }
   };
-  
-  // Clear search
+
   const handleClearSearch = () => {
     setSearchCode('');
     setSearchAgent('');
@@ -78,19 +116,17 @@ const MonitoringCanvas: React.FC = () => {
     setSelectedGroup(null);
     setShowModal(false);
   };
-  
-  // Handle container group click - open modal
+
   const handleGroupClick = (group: GroupedContainer) => {
     setSelectedGroup(group);
     setHighlightedGroupId(group.id);
     setShowModal(true);
   };
-  
-  // Handle zoom controls
+
   const handleZoomIn = () => setScale(s => Math.min(s * 1.2, 5));
   const handleZoomOut = () => setScale(s => Math.max(s / 1.2, 0.5));
   const handleResetView = () => setScale(1);
-  
+
   return (
     <div className="monitoring-canvas-page">
       {/* Search Section */}
@@ -101,7 +137,7 @@ const MonitoringCanvas: React.FC = () => {
               <h2 className="search-title">GPS-Based Container Tracking</h2>
               <p className="search-subtitle">Search and locate containers on the canvas map</p>
             </div>
-            
+
             <div className="search-criteria">
               <div className="criteria-row">
                 <input
@@ -111,7 +147,6 @@ const MonitoringCanvas: React.FC = () => {
                   onChange={(e) => setSearchAgent(e.target.value)}
                   className="criteria-input"
                 />
-                
                 <input
                   type="text"
                   placeholder="Container Number"
@@ -120,7 +155,7 @@ const MonitoringCanvas: React.FC = () => {
                   className="criteria-input"
                 />
               </div>
-              
+
               <button type="submit" className="search-btn-new">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <circle cx="11" cy="11" r="8"></circle>
@@ -128,15 +163,15 @@ const MonitoringCanvas: React.FC = () => {
                 </svg>
                 Search
               </button>
-              
+
               {highlightedGroupId && (
                 <button type="button" onClick={handleClearSearch} className="clear-btn-new">Clear</button>
               )}
             </div>
           </div>
-          
+
           {searchMessage && (
-            <div className={`search-message ${searchMessage.includes('not found') ? 'error' : 'success'}`}>
+            <div className={`search-message ${searchMessage.includes('not found') || searchMessage.includes('error') ? 'error' : 'success'}`}>
               {searchMessage}
             </div>
           )}
@@ -147,6 +182,8 @@ const MonitoringCanvas: React.FC = () => {
       <div className="canvas-wrapper">
         <div className="canvas-header">
           <h3>Container Yard Map</h3>
+          {loading && <span style={{ color: '#aaa', fontSize: '0.85rem' }}>Loading...</span>}
+          {error && <span style={{ color: '#ef4444', fontSize: '0.85rem' }}>{error}</span>}
           <div className="canvas-legend">
             <div className="legend-item"><div className="legend-box stack-0"></div><span>Empty</span></div>
             <div className="legend-item"><div className="legend-box stack-1"></div><span>1 Stack</span></div>
@@ -155,14 +192,14 @@ const MonitoringCanvas: React.FC = () => {
             <div className="legend-item"><div className="legend-box stack-4"></div><span>4+ Stacks</span></div>
           </div>
         </div>
-        
+
         <YardCanvas
           groupedContainers={groupedContainers}
           yardBounds={DEFAULT_YARD_BOUNDS}
           highlightedGroupId={highlightedGroupId}
           onGroupClick={handleGroupClick}
         />
-        
+
         <ControlPanel
           scale={scale}
           onZoomIn={handleZoomIn}
@@ -172,18 +209,20 @@ const MonitoringCanvas: React.FC = () => {
         />
       </div>
 
-      {/* Selected Container Info */}
+      {/* Selected Stack Info */}
       {selectedGroup && !showModal && (
         <div className="selected-info-card">
           <h4>Selected Stack - Zone {selectedGroup.zoneName}</h4>
           <p><strong>Zone ID:</strong> {selectedGroup.zoneId}</p>
           <p><strong>Total Containers:</strong> {selectedGroup.totalStacks}</p>
-          <p><strong>GPS:</strong> {selectedGroup.containers[0].gpsCoordinate.latitude.toFixed(6)}, {selectedGroup.containers[0].gpsCoordinate.longitude.toFixed(6)}</p>
+          {selectedGroup.containers[0] && (
+            <p><strong>GPS:</strong> {selectedGroup.containers[0].gpsCoordinate.latitude.toFixed(6)}, {selectedGroup.containers[0].gpsCoordinate.longitude.toFixed(6)}</p>
+          )}
           <button onClick={() => setShowModal(true)} className="view-details-btn">View Details</button>
         </div>
       )}
 
-      {/* Modal for container stack details */}
+      {/* Modal */}
       {showModal && selectedGroup && (
         <div className="modal-overlay" onClick={() => setShowModal(false)}>
           <div className="modal-content-compact" onClick={(e) => e.stopPropagation()}>
@@ -197,12 +236,14 @@ const MonitoringCanvas: React.FC = () => {
                   <span className="modal-info-label">Zone</span>
                   <span className="modal-info-value">{selectedGroup.zoneName} ({selectedGroup.zoneId})</span>
                 </div>
-                <div className="modal-info-item">
-                  <span className="modal-info-label">GPS Location</span>
-                  <span className="modal-info-value">
-                    {selectedGroup.containers[0].gpsCoordinate.latitude.toFixed(6)}, {selectedGroup.containers[0].gpsCoordinate.longitude.toFixed(6)}
-                  </span>
-                </div>
+                {selectedGroup.containers[0] && (
+                  <div className="modal-info-item">
+                    <span className="modal-info-label">GPS Location</span>
+                    <span className="modal-info-value">
+                      {selectedGroup.containers[0].gpsCoordinate.latitude.toFixed(6)}, {selectedGroup.containers[0].gpsCoordinate.longitude.toFixed(6)}
+                    </span>
+                  </div>
+                )}
                 <div className="modal-info-item">
                   <span className="modal-info-label">Total Stack</span>
                   <span className="modal-info-value">{selectedGroup.totalStacks}/4</span>
@@ -219,12 +260,12 @@ const MonitoringCanvas: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {selectedGroup.containers.map((container) => (
-                      <tr key={container.id}>
-                        <td>{container.stackLevel}</td>
-                        <td>{container.shippingAgent}</td>
-                        <td className="container-number">{container.containerNumber}</td>
-                        <td>{container.yardInDate}</td>
+                    {selectedGroup.containers.map((c) => (
+                      <tr key={c.id}>
+                        <td>{c.stackLevel}</td>
+                        <td>{c.shippingAgent}</td>
+                        <td className="container-number">{c.containerNumber}</td>
+                        <td>{c.yardInDate}</td>
                       </tr>
                     ))}
                   </tbody>
