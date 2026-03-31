@@ -5,8 +5,8 @@
 const char* ssid = "TOP";
 const char* password = "kucinghitam1";
 
-// IP komputer yang menjalankan backend (sama network dengan ESP32)
-const char* backendURL = "http://192.168.1.9:8001/api/v1/gps";
+// Backend Railway — laptop tidak perlu nyala!
+const char* backendURL = "https://container-management-system-production.up.railway.app/api/v1/gps";
 
 TinyGPSPlus gps;
 HardwareSerial gpsSerial(2);
