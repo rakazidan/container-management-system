@@ -10,6 +10,10 @@ COPY package*.json ./
 # Install dependencies
 RUN npm ci
 
+# URL backend Railway (di-bake oleh Vite saat build)
+ARG VITE_API_BASE_URL=https://container-management-system-production.up.railway.app/api/v1
+ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
+
 # Copy source code
 COPY . .
 
