@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
 from app.database import create_pool, close_pool, get_pool
-from app.routers import zones, containers, agents, areas, dashboard, gps
+from app.routers import zones, containers, agents, areas, dashboard, gps, yard_config
 from app.utils.startup import run_startup
 
 
@@ -42,6 +42,7 @@ app.include_router(agents.router,     prefix=PREFIX, tags=["Shipping Agents"])
 app.include_router(areas.router,      prefix=PREFIX, tags=["Areas"])
 app.include_router(dashboard.router,  prefix=PREFIX, tags=["Dashboard"])
 app.include_router(gps.router,        prefix=PREFIX, tags=["GPS"])
+app.include_router(yard_config.router, prefix=PREFIX, tags=["Yard Configuration"])
 
 
 @app.get("/", tags=["Health"])

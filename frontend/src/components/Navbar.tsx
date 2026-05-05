@@ -22,6 +22,9 @@ const Navbar: React.FC = () => {
           <Link to="/monitoring-canvas" className={`nav-menu-item ${location.pathname === '/monitoring-canvas' ? 'active' : ''}`}>
             Monitoring (GPS)
           </Link>
+          <Link to="/gps-tracking" className={`nav-menu-item ${location.pathname === '/gps-tracking' ? 'active' : ''}`}>
+            🛰️ GPS Live
+          </Link>
           <Link to="/master" className={`nav-menu-item ${location.pathname === '/master' ? 'active' : ''}`}>
             Master
           </Link>

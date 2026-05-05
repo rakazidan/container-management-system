@@ -102,3 +102,61 @@ export const getChartData = async (year: number) => {
     });
     return handleResponse(res);
 };
+
+// ─── GPS (ESP32) ──────────────────────────────────────────────────────────────
+
+export const getGpsLatest = async (deviceId = 'esp32-01') => {
+    const res = await fetch(`${API_BASE}/gps/latest?device_id=${encodeURIComponent(deviceId)}`, {
+        headers: getHeaders(),
+    });
+    return handleResponse(res);
+};
+
+export const getGpsHistory = async (deviceId = 'esp32-01', limit = 50) => {
+    const res = await fetch(
+        `${API_BASE}/gps/history?device_id=${encodeURIComponent(deviceId)}&limit=${limit}`,
+        { headers: getHeaders() }
+    );
+    return handleResponse(res);
+};
+
+export const postGpsData = async (lat: number, lng: number, deviceId = 'esp32-01') => {
+    const res = await fetch(`${API_BASE}/gps`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify({ lat, lng, device_id: deviceId }),
+    });
+    return handleResponse(res);
+};
+
+// ─── Yard Configuration ──────────────────────────────────────────────────────
+
+export const getYardConfig = async () => {
+    const res = await fetch(`${API_BASE}/yard-config`, {
+        headers: getHeaders(),
+    });
+    return handleResponse(res);
+};
+
+export const getAllYardConfigs = async () => {
+    const res = await fetch(`${API_BASE}/yard-config/all`, {
+        headers: getHeaders(),
+    });
+    return handleResponse(res);
+};
+
+export const getYardConfigById = async (configId: string) => {
+    const res = await fetch(`${API_BASE}/yard-config/${encodeURIComponent(configId)}`, {
+        headers: getHeaders(),
+    });
+    return handleResponse(res);
+};
+
+export const updateYardConfig = async (configId: string, updates: any) => {
+    const res = await fetch(`${API_BASE}/yard-config/${encodeURIComponent(configId)}`, {
+        method: 'PATCH',
+        headers: getHeaders(),
+        body: JSON.stringify(updates),
+    });
+    return handleResponse(res);
+};

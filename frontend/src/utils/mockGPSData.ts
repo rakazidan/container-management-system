@@ -267,38 +267,34 @@ export const groupContainersByZone = (
 export const groupNearbyContainers = groupContainersByZone;
 
 /**
- * Default yard boundaries with iPhone-style notch at top
- * Polygon points form a closed shape
+ * Default yard boundaries centered at your current GPS location
+ * Adjusted to: -6.226614, 106.819125 (Jakarta area)
+ * Coverage: ~100m radius (200m x 200m square)
  */
 export const DEFAULT_YARD_BOUNDS: YardBoundary = {
   // Bounding box for reference
+  // Center: -6.226614, 106.819125
+  // ±0.0009° latitude = ~100m north/south
+  // ±0.0009° longitude = ~100m east/west
   topLeft: { 
-    latitude: -6.2000, 
-    longitude: 106.8000 
+    latitude: -6.227514,   // Center - 0.0009
+    longitude: 106.818225  // Center - 0.0009
   },
   bottomRight: { 
-    latitude: -6.2100, 
-    longitude: 106.8100 
+    latitude: -6.225714,   // Center + 0.0009
+    longitude: 106.820025  // Center + 0.0009
   },
-  // Polygon with notch at top center
+  // Simple rectangle polygon (no notch for clarity)
   polygonPoints: [
-    // Start from top-left corner
-    { latitude: -6.2000, longitude: 106.8000 },
-    // Go right to notch start (40% from left)
-    { latitude: -6.2000, longitude: 106.8040 },
-    // Notch curve - goes down
-    { latitude: -6.2010, longitude: 106.8040 },
-    // Notch bottom
-    { latitude: -6.2010, longitude: 106.8060 },
-    // Notch curve - goes up
-    { latitude: -6.2000, longitude: 106.8060 },
-    // Continue to top-right corner
-    { latitude: -6.2000, longitude: 106.8100 },
-    // Down to bottom-right
-    { latitude: -6.2100, longitude: 106.8100 },
-    // Across to bottom-left
-    { latitude: -6.2100, longitude: 106.8000 },
-    // Close polygon (auto connects to first point)
+    // Top-left corner
+    { latitude: -6.227514, longitude: 106.818225 },
+    // Top-right corner
+    { latitude: -6.227514, longitude: 106.820025 },
+    // Bottom-right corner
+    { latitude: -6.225714, longitude: 106.820025 },
+    // Bottom-left corner
+    { latitude: -6.225714, longitude: 106.818225 },
+    // Closes automatically to first point
   ],
   canvasWidth: 1200,
   canvasHeight: 800

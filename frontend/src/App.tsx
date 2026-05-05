@@ -5,6 +5,7 @@ import Dashboard from './pages/Dashboard'
 import Monitoring from './pages/Monitoring'
 import MonitoringCanvas from './pages/MonitoringCanvas'
 import Master from './pages/Master'
+import GpsTracking from './pages/GpsTracking'
 
 function App() {
   return (
@@ -16,6 +17,7 @@ function App() {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/monitoring" element={<Monitoring />} />
           <Route path="/monitoring-canvas" element={<MonitoringCanvas />} />
+          <Route path="/gps-tracking" element={<GpsTracking />} />
           <Route path="/master" element={<Master />} />
         </Routes>
       </div>

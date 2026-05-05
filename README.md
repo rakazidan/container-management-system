@@ -97,6 +97,32 @@ npm run lint
 ### Development Server
 Server runs on `http://localhost:5173` with hot module replacement (HMR).
 
+## 🚀 Deployment
+
+### Quick Start (15 minutes)
+Deploy aplikasi ini **100% GRATIS tanpa kartu kredit** menggunakan:
+- **Database**: Neon (PostgreSQL 512MB gratis)
+- **Backend**: Replit (Python/FastAPI unlimited)
+- **Frontend**: Vercel (React/Vite 100GB bandwidth)
+
+**📖 Panduan Lengkap:**
+1. **[QUICKSTART.md](./QUICKSTART.md)** - Panduan deploy cepat 15 menit
+2. **[DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md)** - Panduan detail step-by-step
+3. **[DEPLOYMENT_CHECKLIST.md](./DEPLOYMENT_CHECKLIST.md)** - Checklist untuk memastikan deployment sukses
+4. **[TROUBLESHOOTING.md](./TROUBLESHOOTING.md)** - Solusi masalah umum
+5. **[ALTERNATIVE_PLATFORMS.md](./ALTERNATIVE_PLATFORMS.md)** - Platform alternatif jika ada masalah
+
+### Configuration Files
+- `.replit` - Konfigurasi Replit deployment
+- `vercel.json` - Konfigurasi Vercel deployment
+- `.env.production.example` - Template environment variables
+
+### Live Demo
+Setelah deployment, aplikasi Anda akan dapat diakses di:
+- **Frontend**: `https://your-app.vercel.app`
+- **Backend API**: `https://your-backend.username.repl.co`
+- **API Docs**: `https://your-backend.username.repl.co/docs`
+
 ## Key Concepts
 
 ### Zone-Based Stacking System

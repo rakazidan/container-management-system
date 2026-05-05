@@ -1,0 +1,17 @@
+# Replit Configuration for Backend
+run = "cd backend && uvicorn app.main:app --host 0.0.0.0 --port 8001"
+
+[nix]
+channel = "stable-22_11"
+
+[env]
+PYTHON_LD_LIBRARY_PATH = "/nix/store/2q8c2lgbix0dq5dpbbh0cj7cdvb0kv5c-glibc-2.35-224/lib:/nix/store/q7bnj4lz8chq1wf6gk0dwx6z66k64v75-gcc-11.3.0-lib/lib"
+PYTHONHOME = "/nix/store/5lf01lkvlsz8s2jqr1y0grf6rl62zbg6-python3-3.10.8"
+
+[deployment]
+run = ["sh", "-c", "cd backend && uvicorn app.main:app --host 0.0.0.0 --port 8001"]
+deploymentTarget = "cloudrun"
+
+[[ports]]
+localPort = 8001
+externalPort = 80

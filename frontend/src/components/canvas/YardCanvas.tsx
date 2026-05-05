@@ -4,25 +4,41 @@ import type Konva from 'konva';
 import type { GroupedContainer, YardBoundary } from '../../types/container';
 import { CoordinateTransformer } from '../../utils/coordinateTransform';
 import ContainerMarker from './ContainerMarker';
+import Esp32Marker from './Esp32Marker';
 import './YardCanvas.css';
+
+interface Esp32Position {
+  canvasX: number;
+  canvasY: number;
+  deviceId: string;
+  isLive: boolean;
+}
 
 interface YardCanvasProps {
   groupedContainers: GroupedContainer[];
   yardBounds: YardBoundary;
   highlightedGroupId?: string | null;
   onGroupClick: (group: GroupedContainer) => void;
+  esp32Position?: Esp32Position | null;
+  scale?: number;
+  position?: { x: number; y: number };
+  onScaleChange?: (scale: number) => void;
+  onPositionChange?: (position: { x: number; y: number }) => void;
 }
 
-const YardCanvas: React.FC<YardCanvasProps> = ({ 
-  groupedContainers, 
+const YardCanvas: React.FC<YardCanvasProps> = ({
+  groupedContainers,
   yardBounds,
   highlightedGroupId,
-  onGroupClick 
+  onGroupClick,
+  esp32Position = null,
+  scale = 1,
+  position = { x: 0, y: 0 },
+  onScaleChange,
+  onPositionChange,
 }) => {
-  const [scale, setScale] = useState(1);
-  const [position, setPosition] = useState({ x: 0, y: 0 });
   const stageRef = useRef<Konva.Stage>(null);
-  
+
   // Auto-scroll to highlighted container group
   useEffect(() => {
     if (highlightedGroupId && stageRef.current) {
@@ -31,53 +47,57 @@ const YardCanvas: React.FC<YardCanvasProps> = ({
         const stage = stageRef.current;
         const newX = -group.canvasX * scale + stage.width() / 2;
         const newY = -group.canvasY * scale + stage.height() / 2;
-        
-        setPosition({ x: newX, y: newY });
+        onPositionChange?.({ x: newX, y: newY });
       }
     }
-  }, [highlightedGroupId, groupedContainers, scale]);
-  
+  }, [highlightedGroupId, groupedContainers, scale, onPositionChange]);
+
   // Handle zoom with mouse wheel
   const handleWheel = (e: Konva.KonvaEventObject<WheelEvent>) => {
     e.evt.preventDefault();
-    
+
     const scaleBy = 1.1;
     const stage = e.target.getStage();
     if (!stage) return;
-    
+
     const oldScale = stage.scaleX();
     const pointer = stage.getPointerPosition();
     if (!pointer) return;
-    
+
     const newScale = e.evt.deltaY > 0 ? oldScale / scaleBy : oldScale * scaleBy;
-    
-    // Limit zoom range
     if (newScale < 0.5 || newScale > 5) return;
-    
+
     const mousePointTo = {
       x: (pointer.x - stage.x()) / oldScale,
       y: (pointer.y - stage.y()) / oldScale,
     };
-    
+
     const newPos = {
       x: pointer.x - mousePointTo.x * newScale,
       y: pointer.y - mousePointTo.y * newScale,
     };
-    
-    setScale(newScale);
-    setPosition(newPos);
+
+    onScaleChange?.(newScale);
+    onPositionChange?.(newPos);
   };
-  
+
+  // Handle drag end
+  const handleDragEnd = (e: Konva.KonvaEventObject<DragEvent>) => {
+    const stage = e.target as Konva.Stage;
+    onPositionChange?.({
+      x: stage.x(),
+      y: stage.y(),
+    });
+  };
+
   // Render yard boundary (polygon or rectangle)
   const renderYardBoundary = () => {
     if (yardBounds.polygonPoints && yardBounds.polygonPoints.length >= 3) {
-      // Polygon boundary
       const transformer = new CoordinateTransformer(yardBounds);
       const points = yardBounds.polygonPoints.flatMap(gps => {
         const canvas = transformer.gpsToCanvas(gps);
         return [canvas.x, canvas.y];
       });
-      
       return (
         <Line
           points={points}
@@ -89,7 +109,6 @@ const YardCanvas: React.FC<YardCanvasProps> = ({
         />
       );
     } else {
-      // Rectangle boundary (legacy)
       return (
         <Rect
           x={0}
@@ -104,42 +123,26 @@ const YardCanvas: React.FC<YardCanvasProps> = ({
       );
     }
   };
-  
+
   // Render grid lines for better spatial reference
   const renderGrid = () => {
     const lines: React.JSX.Element[] = [];
     const { canvasWidth, canvasHeight } = yardBounds;
-    const gridSize = 100; // Grid every 100 pixels
-    
-    // Vertical lines
+    const gridSize = 100;
+
     for (let i = 0; i <= canvasWidth; i += gridSize) {
       lines.push(
-        <Line
-          key={`v-${i}`}
-          points={[i, 0, i, canvasHeight]}
-          stroke="#e0e0e0"
-          strokeWidth={1}
-          dash={[5, 5]}
-        />
+        <Line key={`v-${i}`} points={[i, 0, i, canvasHeight]} stroke="#e0e0e0" strokeWidth={1} dash={[5, 5]} />
       );
     }
-    
-    // Horizontal lines
     for (let i = 0; i <= canvasHeight; i += gridSize) {
       lines.push(
-        <Line
-          key={`h-${i}`}
-          points={[0, i, canvasWidth, i]}
-          stroke="#e0e0e0"
-          strokeWidth={1}
-          dash={[5, 5]}
-        />
+        <Line key={`h-${i}`} points={[0, i, canvasWidth, i]} stroke="#e0e0e0" strokeWidth={1} dash={[5, 5]} />
       );
     }
-    
     return lines;
   };
-  
+
   return (
     <div className="yard-canvas-container">
       <Stage
@@ -151,18 +154,18 @@ const YardCanvas: React.FC<YardCanvasProps> = ({
         x={position.x}
         y={position.y}
         onWheel={handleWheel}
+        onDragEnd={handleDragEnd}
         draggable
-        // Performance optimizations
         listening={true}
       >
         <Layer>
-          {/* Yard boundary - polygon or rectangle */}
+          {/* Yard boundary */}
           {renderYardBoundary()}
-          
-          {/* Grid */}
+
+          {/* Grid reference */}
           {renderGrid()}
-          
-          {/* Container markers */}
+
+          {/* Container stack markers */}
           {groupedContainers.map(group => (
             <ContainerMarker
               key={group.id}
@@ -171,6 +174,18 @@ const YardCanvas: React.FC<YardCanvasProps> = ({
               isHighlighted={group.id === highlightedGroupId}
             />
           ))}
+
+          {/* ESP32 GPS marker — posisi real-time device di dalam yard
+              Bentuk menyerupai container (60x24px) warna oranye dengan pulse.
+              Ke depannya: koordinat berasal dari GPS points nyata yard. */}
+          {esp32Position && (
+            <Esp32Marker
+              canvasX={esp32Position.canvasX}
+              canvasY={esp32Position.canvasY}
+              deviceId={esp32Position.deviceId}
+              isLive={esp32Position.isLive}
+            />
+          )}
         </Layer>
       </Stage>
     </div>
